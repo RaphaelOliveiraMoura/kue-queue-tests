@@ -6,10 +6,8 @@ class Pdf {
   }
 
   async run(params) {
-    console.log(
-      `-> Pdf job startd with params ${JSON.stringify(params, null, 2)} ...`
-    );
-    await sleep(2000);
+    console.log(`-> Pdf job startd ...`);
+    await sleep(1000);
     console.log('<- Pdf job finish...');
   }
 }

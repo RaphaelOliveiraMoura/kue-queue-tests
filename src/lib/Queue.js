@@ -3,6 +3,9 @@ const kue = require('kue');
 const Mail = require('../jobs/Mail');
 const Pdf = require('../jobs/Pdf');
 
+const PARALLEL_PROCESSES = 1;
+const ATTEMPTS = 10;
+
 const queue = kue.createQueue({
   redis: 'redis://localhost:6379'
 });
@@ -10,20 +13,34 @@ const queue = kue.createQueue({
 const jobs = [Mail, Pdf];
 
 class Queue {
-  processQueue() {
-    jobs.forEach(job =>
-      queue.process(job.name, 1, async ({ data }, done) => {
-        await job.run(data);
-        done();
-      })
-    );
-  }
+  add(name, params, configurations = {}) {
+    const { attempts, priority } = configurations;
 
-  add(name, params) {
     queue
       .create(name, params)
-      .attempts(10)
+      .attempts(attempts || ATTEMPTS)
+      .priority(priority || 'normal')
+      .delay(10)
+      .backoff({ type: 'exponential' })
       .save();
+  }
+
+  handleError(job, error) {
+    console.log(`X -> Error in job ${job.id}`);
+  }
+
+  processQueue() {
+    jobs.forEach(job =>
+      queue.process(job.name, PARALLEL_PROCESSES, async (queueJob, done) => {
+        try {
+          await job.run(queueJob.data);
+          done();
+        } catch (error) {
+          this.handleError(queueJob, error);
+          done(error);
+        }
+      })
+    );
   }
 }
 

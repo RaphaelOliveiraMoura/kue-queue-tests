@@ -6,10 +6,12 @@ class Mail {
   }
 
   async run(params) {
-    console.log(
-      `-> Mail job startd with params ${JSON.stringify(params, null, 2)} ...`
-    );
+    console.log(`-> Mail job startd...`);
+
     await sleep(500);
+
+    if (params && params.email === 'invalid') throw new Error('Email invalid');
+
     console.log('<- Mail job finish...');
   }
 }
